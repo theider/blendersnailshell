@@ -44,10 +44,10 @@ class MESH_OT_add_object(bpy.types.Operator):
     bl_options = {'REGISTER', 'UNDO'}
 
     vertical_translation: FloatProperty(name="Vertical Translation", default=10, min=-20.0, max=20.0)
-    scale_factor_a: FloatProperty(name="Scale Factor", default=0.08, min=0.0001, max=5)
+    scale_factor_a: FloatProperty(name="Scale Factor", default=0.0005, min=0.0001, max=5)
     growth_rate_b: FloatProperty(name="Growth Rate", default=0.1, min=0.01, max=5)
-    theta_max: FloatProperty(name="Theta Max", default=16 * np.pi, min=3 * np.pi, max=32 * np.pi)
-    num_spiral_points: IntProperty(name="Spiral Points", default=200, min=100, max=1000)    
+    theta_max: FloatProperty(name="Theta Max", default=(24 * np.pi) + (np.pi / 8), min=3 * np.pi, max=32 * np.pi)
+    num_spiral_points: IntProperty(name="Spiral Points", default=400, min=100, max=1000)    
     num_circle_points: IntProperty(name="Circle Points", default=24, min=4, max=100)    
     
     def get_spiral_radius(self, theta):

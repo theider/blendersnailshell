@@ -43,12 +43,12 @@ class MESH_OT_add_object(bpy.types.Operator):
     bl_label = "Snail Shell"
     bl_options = {'REGISTER', 'UNDO'}
 
-    vertical_translation: FloatProperty(name="Vertical Translation", default=0, min=-20.0, max=20.0)
-    scale_factor_a: FloatProperty(name="Scale Factor", default=0.0005, min=0.0001, max=5)
-    growth_rate_b: FloatProperty(name="Growth Rate", default=0.1, min=0.01, max=5)
-    theta_max: FloatProperty(name="Theta Max", default=(24 * np.pi) + (np.pi / 8), min=3 * np.pi, max=32 * np.pi)
-    num_spiral_points: IntProperty(name="Spiral Points", default=400, min=100, max=1000)    
-    num_circle_points: IntProperty(name="Circle Points", default=48, min=4, max=100)    
+    vertical_translation: FloatProperty(name="Vertical Translation", default=1.4, min=-10.0, max=10.0)
+    scale_factor_a: FloatProperty(name="Scale Factor", default=0.05, min=0.0001, max=5)
+    growth_rate_b: FloatProperty(name="Growth Rate", default=0.15, min=0.01, max=5)
+    theta_max: FloatProperty(name="Theta Max", default=(8 * np.pi), min=3 * np.pi, max=32 * np.pi)
+    num_spiral_points: IntProperty(name="Spiral Points", default=200, min=100, max=1000)    
+    num_circle_points: IntProperty(name="Circle Points", default=20, min=4, max=100)    
     
     def get_spiral_radius(self, theta):
         r = self.scale_factor_a * np.exp(self.growth_rate_b * theta)
@@ -64,7 +64,7 @@ class MESH_OT_add_object(bpy.types.Operator):
         spiral_radius = self.get_spiral_radius(theta)
         spiral_radius2 = self.get_spiral_radius(theta - (2 * np.pi))
         radius_delta = spiral_radius - spiral_radius2
-        return (4 * radius_delta) / 5
+        return radius_delta
 
     def create_circle_mesh(self, radius, angle):
         source_circle_mesh = bmesh.new()
@@ -97,29 +97,36 @@ class MESH_OT_add_object(bpy.types.Operator):
         # create a circle mesh to use as a template.
         delta_angle = self.theta_max / self.num_spiral_points
 
-        # add the first circle.        
-        theta = self.theta_max
-        spiral_radius = self.get_spiral_radius(theta)
-        spiral_point2 = self.get_spiral_point(theta - (2 * np.pi))
+        # Calculate the spiral radial range
+        spiral_radial_range = self.get_spiral_radius(self.theta_max) - self.get_spiral_radius(0) 
+
+        # add the first circle.               
+        theta = self.theta_max        
+        spiral_point = self.get_spiral_point(theta)
         circle_radius = self.get_circle_radius(theta)
-        circle_rotation_angle = theta
-        # Create a circle source_circle_mesh       
+        circle_rotation_angle = theta        
+        
+        # Create a circle source_circle_mesh   
+        z_offset = 0
         source_circle_mesh = self.create_circle_mesh(circle_radius, circle_rotation_angle) 
         for v in source_circle_mesh.verts:            
-            bmesh.ops.create_vert(snail_shell_mesh, co=(v.co.x + spiral_point2['x'], v.co.y + spiral_point2['y'], v.co.z))
+            bmesh.ops.create_vert(snail_shell_mesh, co=(v.co.x + spiral_point['x'], v.co.y + spiral_point['y'], v.co.z + z_offset))
         snail_shell_mesh.verts.ensure_lookup_table() 
         source_circle_mesh.free()
         
         for i in range(1, self.num_spiral_points):
             theta -= delta_angle            
-            circle_rotation_angle -= delta_angle
-            spiral_radius = self.get_spiral_radius(theta)
-            spiral_point2 = self.get_spiral_point(theta - (2 * np.pi))
+            circle_rotation_angle -= delta_angle       
+            spiral_radius = self.get_spiral_radius(theta)     
+            spiral_point = self.get_spiral_point(theta)
             circle_radius = self.get_circle_radius(theta)
-
+            spiral_pos = 1 - (spiral_radius / spiral_radial_range)
+            #z_offset = math.sin(spiral_pos * (np.pi/2)) * self.vertical_translation 
+            z_offset = spiral_pos * self.vertical_translation 
+            # Create a circle source_circle_mesh            
             source_circle_mesh = self.create_circle_mesh(circle_radius, circle_rotation_angle) 
             for v in source_circle_mesh.verts:            
-                bmesh.ops.create_vert(snail_shell_mesh, co=(v.co.x + spiral_point2['x'], v.co.y + spiral_point2['y'], v.co.z))
+                bmesh.ops.create_vert(snail_shell_mesh, co=(v.co.x + spiral_point['x'], v.co.y + spiral_point['y'], v.co.z + z_offset))
             snail_shell_mesh.verts.ensure_lookup_table() 
             source_circle_mesh.free()
 
